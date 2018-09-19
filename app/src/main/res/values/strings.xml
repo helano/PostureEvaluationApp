@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">OpenCVRectangleDetection</string>
+    <string name="OpenGallery">Open Gallery</string>
+    <string name="HoughCircles">Hough Circles</string>
+    <string name="DoG">Dog</string>
+    <string name="CannyEdges">Canny Edges</string>
+    <string name="HoughLines">Hough Lines</string>
+</resources>
