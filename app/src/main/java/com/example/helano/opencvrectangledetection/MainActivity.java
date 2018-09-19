@@ -50,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     Bitmap tempBitmap, currentBitmap, originalBitmap;
     Mat originalMat;
+    static Scalar min = new Scalar(50, 50, 50, 0);//BGR-A
+    static Scalar max= new Scalar(255, 255, 255, 0);//BGR-A
 
 
     @Override
@@ -105,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.CannyEdges:
                 Canny();
-
+                return true;
+            case R.id.White_Area:
+                getWhiteArea();
                 return true;
 
             default:
@@ -136,10 +140,10 @@ public class MainActivity extends AppCompatActivity {
            // of selected Image
 //To speed up loading of image
             BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inSampleSize = 2;
+            options.inSampleSize = 1;
             Bitmap temp = BitmapFactory.decodeFile(picturePath, options);
 //Get orientation information
-            int orientation = 90;
+            int orientation = 0;
             try {
                 ExifInterface imgParams = new ExifInterface(picturePath);
                 orientation = imgParams.getAttributeInt(
@@ -200,12 +204,9 @@ public class MainActivity extends AppCompatActivity {
         Mat cannyEdges = new Mat();
         Mat circles = new Mat();
 //Converting the image to grayscale
-        Imgproc.cvtColor(originalMat
-                ,grayMat,Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(originalMat,grayMat,Imgproc.COLOR_BGR2GRAY);
         Imgproc.Canny(grayMat, cannyEdges,10, 100);
-        Imgproc.HoughCircles(cannyEdges, circles,
-                Imgproc.CV_HOUGH_GRADIENT,1, cannyEdges.rows() / 15);
-//, grayMat.rows() / 8);
+        Imgproc.HoughCircles(cannyEdges, circles, Imgproc.CV_HOUGH_GRADIENT,1,cannyEdges.rows() / 15, 100.0, 30.0, 0, 40);
         Mat houghCircles = new Mat();
         houghCircles.create(cannyEdges.rows(),cannyEdges.cols(),CvType.CV_8UC1);
 //Drawing lines on the image
@@ -222,12 +223,13 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("X:"+x +"y:"+ y);
 //Drawing circles on an image
          //Core.circle(houghCircles,center,r, new Scalar(255,0,0),1);
+            Imgproc.circle(originalMat, center, 1, new Scalar(0,0,0), 3, 8, 0 );
 //
-            Imgproc.circle(houghCircles,center,r, new Scalar(255,0,0),1);
+            Imgproc.circle(originalMat,center,r, new Scalar(0,0,255),1);
 
         }
 //Converting Mat back to Bitmap
-        Utils.matToBitmap(houghCircles, currentBitmap);
+        Utils.matToBitmap(originalMat, currentBitmap);
         loadImageToImageView();
     }
 
@@ -319,6 +321,15 @@ public class MainActivity extends AppCompatActivity {
         }
 //Converting Mat back to Bitmap
         Utils.matToBitmap(houghLines, currentBitmap);
+        loadImageToImageView();
+    }
+
+    void getWhiteArea(){
+        Mat whiteArea = new Mat();
+        Core.inRange(originalMat, min, max, whiteArea);
+
+
+        Utils.matToBitmap(whiteArea, currentBitmap);
         loadImageToImageView();
     }
 }

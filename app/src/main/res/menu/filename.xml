@@ -24,5 +24,10 @@
         android:title="@string/HoughLines"
         android:orderInCategory="100"
         app:showAsAction="never"/>
+    <item android:id="@+id/White_Area"
+        android:title="@string/WhiteArea"
+        android:orderInCategory="100"
+        app:showAsAction="never"/>
+
 
 </menu>

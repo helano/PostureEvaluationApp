@@ -5,4 +5,5 @@
     <string name="DoG">Dog</string>
     <string name="CannyEdges">Canny Edges</string>
     <string name="HoughLines">Hough Lines</string>
+    <string name="WhiteArea">White Area</string>
 </resources>
