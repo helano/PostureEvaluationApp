@@ -37,6 +37,7 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -98,9 +99,6 @@ public class MainActivity extends AppCompatActivity {
             case R.id.HoughCircles:
                 houghCircles();
                 return true;
-            case R.id.HoughLines:
-               HoughLines();
-               return true;
 
             case R.id.DoG:
                 DifferenceOfGaussian();
@@ -203,10 +201,16 @@ public class MainActivity extends AppCompatActivity {
         Mat grayMat = new Mat();
         Mat cannyEdges = new Mat();
         Mat circles = new Mat();
+        Mat white = new Mat();
+        Mat blur = new Mat();
 //Converting the image to grayscale
-        Imgproc.cvtColor(originalMat,grayMat,Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Canny(grayMat, cannyEdges,10, 100);
-        Imgproc.HoughCircles(cannyEdges, circles, Imgproc.CV_HOUGH_GRADIENT,1,cannyEdges.rows() / 15, 100.0, 30.0, 0, 40);
+
+
+        Imgproc.cvtColor(blur,grayMat,Imgproc.COLOR_BGR2GRAY);
+        Imgproc.threshold(grayMat,white, 200, 255, Imgproc.THRESH_BINARY);
+      Imgproc.Canny(white, cannyEdges,10, 100);
+        Imgproc.blur(white, blur,new Size(3,3) );
+        Imgproc.HoughCircles(blur, circles, Imgproc.CV_HOUGH_GRADIENT,1,1, 100.0, 30.0, 0, 40);
         Mat houghCircles = new Mat();
         houghCircles.create(cannyEdges.rows(),cannyEdges.cols(),CvType.CV_8UC1);
 //Drawing lines on the image
@@ -234,16 +238,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void setLabel(Mat im, String label, Point pt) {
-        int fontface = Core.FONT_HERSHEY_SIMPLEX;
-        double scale = 3;//0.4;
-        int thickness = 3;//1;
-        int[] baseline = new int[1];
-        Size text = Imgproc.getTextSize(label, fontface, scale, thickness, baseline);
-       // Rect r = Imgproc.boundingRect(contour);
-       // Point pt = new Point(r.x + ((r.width - text.width) / 2),r.y + ((r.height + text.height) / 2));
-        Imgproc.putText(im, label, pt, fontface, scale, new Scalar(255, 0, 0), thickness);
-    }
 
 
 
@@ -285,51 +279,48 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    void HoughLines()
-    {
-        Mat grayMat = new Mat();
-        Mat cannyEdges = new Mat();
-        Mat lines = new Mat();
-//Converting the image to grayscale
-        Imgproc.cvtColor(originalMat
-                ,grayMat,Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Canny(grayMat, cannyEdges,10, 100);
-        Imgproc.HoughLinesP(cannyEdges,
-                lines, 1, Math.PI/180, 50, 20, 20);
-        Mat houghLines = new Mat();
-        houghLines.create(cannyEdges.rows(),
-                cannyEdges.cols(),CvType.CV_8UC1);
-        //Drawing lines on the image
-        for(int i = 0 ; i < lines.cols() ; i++)
-        {
-            double[] points = lines.get(0,i);
-            double x1, y1, x2, y2;
 
-            x1 = points[0];
-            x2 = points[1];
-            y1 = points[2];
-            y2 = points[3];
-            Point pt1 = new Point(x1, y1);
-            Point pt2 = new Point(x2, y2);
-//Drawing lines on an image
-         //
-            //   Core.line(houghLines, pt1, pt2,new Scalar(255, 0, 0), 1);
-            Imgproc.line(houghLines, pt1, pt2,
-                    new Scalar(255, 0, 0), 1);
-
-
-        }
-//Converting Mat back to Bitmap
-        Utils.matToBitmap(houghLines, currentBitmap);
-        loadImageToImageView();
-    }
 
     void getWhiteArea(){
         Mat whiteArea = new Mat();
-        Core.inRange(originalMat, min, max, whiteArea);
+        Mat gray = new Mat();
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        List<Double> areasContours = new ArrayList<Double>();
+       // Core.inRange(originalMat, min, max, whiteArea);
+
+        Imgproc.cvtColor(originalMat,gray,Imgproc.COLOR_BGR2GRAY);
+
+        Imgproc.threshold(gray, whiteArea, 200, 255, Imgproc.THRESH_BINARY);
+
+        Imgproc.findContours(whiteArea, contours, new Mat(),     Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
+            Imgproc.drawContours(originalMat, contours, contourIdx, new Scalar(0, 0, 255), 1);
+        }
+        List<Moments> mu = new ArrayList<Moments>(contours.size());
+        for (int i = 0; i < contours.size(); i++) {
+            mu.add(i, Imgproc.moments(contours.get(i), false));
+            Moments p = mu.get(i);
+            int x = (int) (p.get_m10() / p.get_m00());
+            int y = (int) (p.get_m01() / p.get_m00());
+            Imgproc.circle(originalMat, new Point(x, y), 1, new Scalar(255,49,0,255));
+
+            Mat aux = contours.get(i);
 
 
-        Utils.matToBitmap(whiteArea, currentBitmap);
+
+            System.out.print( "Area contorno:"+i+"= "+ Imgproc.contourArea(aux));
+
+        }
+
+
+
+
+
+
+
+        Utils.matToBitmap(originalMat, currentBitmap);
         loadImageToImageView();
     }
 }
