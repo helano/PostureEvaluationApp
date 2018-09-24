@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -53,12 +54,14 @@ public class MainActivity extends AppCompatActivity {
     Mat originalMat;
     static Scalar min = new Scalar(50, 50, 50, 0);//BGR-A
     static Scalar max= new Scalar(255, 255, 255, 0);//BGR-A
+    static TextView areaTextView ;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        areaTextView = (TextView)findViewById(R.id.contour_area);
 
 
 
@@ -287,6 +290,8 @@ public class MainActivity extends AppCompatActivity {
 
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         List<Double> areasContours = new ArrayList<Double>();
+        List<Point> points = new ArrayList<Point>();
+        Double biggerContour = new Double(0);
        // Core.inRange(originalMat, min, max, whiteArea);
 
         Imgproc.cvtColor(originalMat,gray,Imgproc.COLOR_BGR2GRAY);
@@ -296,7 +301,26 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.findContours(whiteArea, contours, new Mat(),     Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
         for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++) {
-            Imgproc.drawContours(originalMat, contours, contourIdx, new Scalar(0, 0, 255), 1);
+
+
+            Mat aux = contours.get(contourIdx);
+            areasContours.add( Imgproc.contourArea(aux));
+            if (contourIdx==0){
+                biggerContour = areasContours.get(contourIdx);
+            }else {
+
+                if (biggerContour <= areasContours.get(contourIdx)){
+                    biggerContour = areasContours.get(contourIdx);
+                }
+            }
+
+            System.out.print( "Area contorno:"+contourIdx+"= "+ areasContours.get(contourIdx));
+            areaTextView.setText(Double.toString(biggerContour));
+            if (areasContours.get(contourIdx)<200) {
+                Imgproc.drawContours(originalMat, contours, contourIdx, new Scalar(0, 0, 255), 1);
+
+            }
+
         }
         List<Moments> mu = new ArrayList<Moments>(contours.size());
         for (int i = 0; i < contours.size(); i++) {
@@ -304,13 +328,14 @@ public class MainActivity extends AppCompatActivity {
             Moments p = mu.get(i);
             int x = (int) (p.get_m10() / p.get_m00());
             int y = (int) (p.get_m01() / p.get_m00());
-            Imgproc.circle(originalMat, new Point(x, y), 1, new Scalar(255,49,0,255));
+            points.add(new Point(x,y));
 
-            Mat aux = contours.get(i);
+            if (areasContours.get(i)<200) {
+                Imgproc.circle(originalMat, new Point(x, y), 1, new Scalar(255,49,0,255));
+                Imgproc.putText(originalMat, Integer.toString(i), new Point(x, y), 1, 1, new Scalar(255,0,0));
+            }
 
 
-
-            System.out.print( "Area contorno:"+i+"= "+ Imgproc.contourArea(aux));
 
         }
 
@@ -318,9 +343,23 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+        drawLines(points);
 
         Utils.matToBitmap(originalMat, currentBitmap);
         loadImageToImageView();
+    }
+
+
+    void drawLines(List<Point> listOfPoints){
+
+
+        Imgproc.line(originalMat, listOfPoints.get(0), listOfPoints.get(1), new Scalar(0,255,0) );
+        Imgproc.line(originalMat, listOfPoints.get(2), listOfPoints.get(3), new Scalar(0,255,0) );
+        Imgproc.line(originalMat, listOfPoints.get(5), listOfPoints.get(6), new Scalar(0,255,0) );
+        Imgproc.line(originalMat, listOfPoints.get(7), listOfPoints.get(8), new Scalar(0,255,0) );
+        Imgproc.line(originalMat, listOfPoints.get(9), listOfPoints.get(10), new Scalar(0,255,0) );
+        Imgproc.line(originalMat, listOfPoints.get(11), listOfPoints.get(12), new Scalar(0,255,0) );
+
+
     }
 }
