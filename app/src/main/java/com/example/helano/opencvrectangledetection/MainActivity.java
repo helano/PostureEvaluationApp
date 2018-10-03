@@ -49,19 +49,28 @@ import static org.opencv.core.Core.*;
 
 public class MainActivity extends AppCompatActivity {
 
-
+    TipoAvaliacao tipoAvaliacao;
     Bitmap tempBitmap, currentBitmap, originalBitmap;
     Mat originalMat;
     static Scalar min = new Scalar(50, 50, 50, 0);//BGR-A
     static Scalar max= new Scalar(255, 255, 255, 0);//BGR-A
-    static TextView areaTextView ;
+    //static TextView areaTextView ;
+
+    TextView[] textViews = new TextView[3];
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        areaTextView = (TextView)findViewById(R.id.contour_area);
+       // areaTextView = (TextView)findViewById(R.id.contour_area);
+
+
+            textViews[0] = (TextView)findViewById(R.id.point0);
+            textViews[1] = (TextView)findViewById(R.id.point1);
+            textViews[2] = (TextView)findViewById(R.id.point2);
+
+
 
 
 
@@ -99,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, 0);
 
                 return true;
-            case R.id.HoughCircles:
+           /* case R.id.HoughCircles:
                 houghCircles();
                 return true;
 
@@ -108,9 +117,13 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.CannyEdges:
                 Canny();
+                return true;*/
+            case R.id.Frontal_Analysis:
+
+                measure( tipoAvaliacao.ANTERIOR);
                 return true;
-            case R.id.White_Area:
-                getWhiteArea();
+            case R.id.Posterior_Analysis:
+                measure( tipoAvaliacao.POSTERIOR);
                 return true;
 
             default:
@@ -199,92 +212,17 @@ public class MainActivity extends AppCompatActivity {
                 mOpenCVCallBack);
     }
 
-    void houghCircles()
-    {
-        Mat grayMat = new Mat();
-        Mat cannyEdges = new Mat();
-        Mat circles = new Mat();
-        Mat white = new Mat();
-        Mat blur = new Mat();
-//Converting the image to grayscale
-
-
-        Imgproc.cvtColor(blur,grayMat,Imgproc.COLOR_BGR2GRAY);
-        Imgproc.threshold(grayMat,white, 200, 255, Imgproc.THRESH_BINARY);
-      Imgproc.Canny(white, cannyEdges,10, 100);
-        Imgproc.blur(white, blur,new Size(3,3) );
-        Imgproc.HoughCircles(blur, circles, Imgproc.CV_HOUGH_GRADIENT,1,1, 100.0, 30.0, 0, 40);
-        Mat houghCircles = new Mat();
-        houghCircles.create(cannyEdges.rows(),cannyEdges.cols(),CvType.CV_8UC1);
-//Drawing lines on the image
-        for(int i = 0 ; i < circles.cols() ; i++)
-        {
-            double[] parameters = circles.get(0,i);
-            double x, y;
-            int r;
-            x = parameters[0];
-            y = parameters[1];
-            r = (int)parameters[2];
-            Point center = new Point(x, y);
-
-            System.out.println("X:"+x +"y:"+ y);
-//Drawing circles on an image
-         //Core.circle(houghCircles,center,r, new Scalar(255,0,0),1);
-            Imgproc.circle(originalMat, center, 1, new Scalar(0,0,0), 3, 8, 0 );
-//
-            Imgproc.circle(originalMat,center,r, new Scalar(0,0,255),1);
-
-        }
-//Converting Mat back to Bitmap
-        Utils.matToBitmap(originalMat, currentBitmap);
-        loadImageToImageView();
-    }
 
 
 
 
 
-    public void  DifferenceOfGaussian()
-    {
-
-
-       Mat  grayMat = new Mat();
-        Mat blur1 = new Mat();
-        Mat blur2 = new Mat();
-//Converting the image to grayscale
-        Imgproc.cvtColor(originalMat
-                ,grayMat,Imgproc.COLOR_BGR2GRAY);
-//Bluring the images using two different blurring radius
-        Imgproc.GaussianBlur(grayMat,blur1,new Size(15,15),5);
-        Imgproc.GaussianBlur(grayMat,blur2,new Size(21,21),5);
-//Subtracting the two blurred images
-        Mat DoG = new Mat();
-        Core.absdiff(blur1, blur2,DoG);
-//Inverse Binary Thresholding
-        Core.multiply(DoG,new Scalar(100), DoG);
-        Imgproc.threshold(DoG,DoG,50,255
-                ,Imgproc.THRESH_BINARY_INV);
-//Converting Mat back to Bitmap
-        Utils.matToBitmap(DoG, currentBitmap);
-        loadImageToImageView();
-    }
-
-    public void Canny()
-    {
-        Mat grayMat = new Mat();
-        Mat cannyEdges = new Mat();
-//Converting the image to grayscale
-        Imgproc.cvtColor(originalMat,grayMat,Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Canny(grayMat, cannyEdges,10, 100);
-//Converting Mat back to Bitmap
-        Utils.matToBitmap(cannyEdges, currentBitmap);
-        loadImageToImageView();
-    }
 
 
 
 
-    void getWhiteArea(){
+
+    void measure(TipoAvaliacao tipoAvaliacao){
         Mat whiteArea = new Mat();
         Mat gray = new Mat();
 
@@ -315,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             System.out.print( "Area contorno:"+contourIdx+"= "+ areasContours.get(contourIdx));
-            areaTextView.setText(Double.toString(biggerContour));
+            //areaTextView.setText(Double.toString(biggerContour));
             if (areasContours.get(contourIdx)<200) {
                 Imgproc.drawContours(originalMat, contours, contourIdx, new Scalar(0, 0, 255), 1);
 
@@ -342,24 +280,145 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    switch (tipoAvaliacao) {
 
-        drawLines(points);
 
+        case ANTERIOR:
+            drawLines(points, tipoAvaliacao.ANTERIOR);
+            calcularAngulos(points, tipoAvaliacao.ANTERIOR);
+        break;
+        case POSTERIOR:
+            drawLines(points, tipoAvaliacao.POSTERIOR);
+            calcularAngulos(points, tipoAvaliacao.POSTERIOR);
+        break;
+
+        //setPoints(points);
+    }
         Utils.matToBitmap(originalMat, currentBitmap);
         loadImageToImageView();
     }
 
 
-    void drawLines(List<Point> listOfPoints){
+    void drawLines(List<Point> listOfPoints, TipoAvaliacao tipoAvaliacao){
+
+      switch (tipoAvaliacao) {
+
+          case ANTERIOR:
+
+             Imgproc.line(originalMat, listOfPoints.get(2), listOfPoints.get(0), new Scalar(0, 255, 0));
+             Imgproc.line(originalMat, listOfPoints.get(2), listOfPoints.get(1), new Scalar(0, 255, 0));
+             Imgproc.line(originalMat, listOfPoints.get(2), new Point(listOfPoints.get(2).x, 200), new Scalar(255, 0, 0));
+          break;
+          case POSTERIOR:
+              Imgproc.line(originalMat, listOfPoints.get(0), listOfPoints.get(1), new Scalar(0, 255, 0));
+              Imgproc.line(originalMat, listOfPoints.get(1), listOfPoints.get(2), new Scalar(0, 255, 0));
+
+           break;
+      }
 
 
-        Imgproc.line(originalMat, listOfPoints.get(0), listOfPoints.get(1), new Scalar(0,255,0) );
-        Imgproc.line(originalMat, listOfPoints.get(2), listOfPoints.get(3), new Scalar(0,255,0) );
-        Imgproc.line(originalMat, listOfPoints.get(5), listOfPoints.get(6), new Scalar(0,255,0) );
-        Imgproc.line(originalMat, listOfPoints.get(7), listOfPoints.get(8), new Scalar(0,255,0) );
-        Imgproc.line(originalMat, listOfPoints.get(9), listOfPoints.get(10), new Scalar(0,255,0) );
-        Imgproc.line(originalMat, listOfPoints.get(11), listOfPoints.get(12), new Scalar(0,255,0) );
 
 
+    }
+    void setPoints(List<Point> listOfPoints){
+
+        textViews[0].setText(listOfPoints.get(0).toString());
+        textViews[1].setText(listOfPoints.get(1).toString());
+        textViews[2].setText(listOfPoints.get(2).toString());
+
+
+    }
+
+    void calcularAngulos(List<Point> listOfPoints, TipoAvaliacao tipoAvaliacao){
+
+        switch (tipoAvaliacao){
+
+            case ANTERIOR:
+                calculoFrontal(listOfPoints);
+                break;
+
+            case POSTERIOR:
+                calculoPosterior(listOfPoints);
+                break;
+            default:
+                break;
+        }
+
+
+
+    }
+
+    void calculoFrontal(List<Point> listOfPoints){
+
+        double a = listOfPoints.get(0).y- listOfPoints.get(2).y;
+        double b  = listOfPoints.get(0).x - listOfPoints.get(2).x;
+
+        double angulo = Math.atan(b/a);
+        angulo *= (180/Math.PI);
+
+        textViews[0].setText("angulo 2.0 : "+ angulo);
+
+        a = listOfPoints.get(1).y - listOfPoints.get(2).y;
+        b  = listOfPoints.get(2).x - listOfPoints.get(1).x;
+
+        double angulo1 = Math.atan(b/a);
+        angulo1 *= (180/Math.PI);
+
+        textViews[1].setText("angulo 2.1 : "+ angulo1);
+
+        double dif = angulo-angulo1;
+        if (dif<0){
+            dif*=-1;
+        }
+
+        textViews[2].setText("diferença angular: " + dif);
+
+
+    }
+
+
+    void calculoPosterior(List<Point> listOfPoints){
+        double a = listOfPoints.get(2).x - listOfPoints.get(1).x;
+        double b = listOfPoints.get(2).y - listOfPoints.get(1).y;
+
+
+
+        double hipotenusaAB = Math.sqrt(Math.pow(a, 2)+Math.pow(b, 2));
+
+
+        double d = listOfPoints.get(0).x - listOfPoints.get(1).x;
+        double e  = listOfPoints.get(1).y - listOfPoints.get(0).y;
+
+        double hipotenusaDE =  Math.sqrt(Math.pow(d, 2)+Math.pow(e, 2));
+
+
+        double f = listOfPoints.get(0).x - listOfPoints.get(2).x;
+        double g = listOfPoints.get(2).y - listOfPoints.get(0).y;
+
+        double hipotenusaFG =  Math.sqrt(Math.pow(f, 2)+Math.pow(g, 2));
+
+
+       double cosseno  = (Math.pow(hipotenusaAB, 2) + Math.pow(hipotenusaDE, 2)-Math.pow(hipotenusaFG, 2) )/(2 * hipotenusaAB * hipotenusaDE);
+
+       double angle  = Math.acos(cosseno);
+
+       angle*=180/Math.PI;
+
+        textViews[0].setText("angulo : "+ angle);
+        textViews[1].setText("");
+        textViews[2].setText("");
+
+
+    }
+
+
+ double verificaSinal(double x){
+
+        if (x <0){
+
+            x*=-1;
+        }
+
+        return x;
     }
 }
